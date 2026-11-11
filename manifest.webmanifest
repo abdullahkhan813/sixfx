@@ -1,0 +1,32 @@
+{
+  "id": "./",
+  "name": "SixFX — Multi-Currency Converter",
+  "short_name": "SixFX",
+  "description": "Convert up to 20 currencies simultaneously using the latest available daily reference rates; keep saved rates for offline use.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101011",
+  "theme_color": "#101011",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

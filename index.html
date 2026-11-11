@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101011">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Convert up to 20 currencies together with daily online exchange rates, an editable amount in every row, and saved offline rates.">
+  <title>SixFX — Multi-Currency Converter</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <style>
+    :root{color-scheme:dark;--page:#101011;--row:#141415;--row-border:#29292c;--active:#1d2935;--text:#ededf0;--soft:#a5a7ac;--muted:#85878d;--accent:#b7d7f7;--red:#e8a49d}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:var(--page);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:-.015em}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    a{color:#b4d8ff}
+    .app{width:min(100%,900px);margin:0 auto;padding:30px 0 38px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 28px}
+    .logo{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:820;letter-spacing:-.055em}
+    .logo-mark{display:grid;place-items:center;width:36px;height:36px;border:1px solid #495d70;border-radius:10px;color:#bedbfa;background:#1d2a36}
+    .logo-mark svg{width:22px;height:22px}
+    .top-controls{display:flex;align-items:center;gap:10px}
+    .action{border:1px solid #36383c;border-radius:10px;color:#d5d9dd;background:#1c1d20;padding:10px 13px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:650;white-space:nowrap}
+    .action:hover{border-color:#7b96b2;background:#292d32}
+    .action:disabled{opacity:.6;cursor:wait}
+    .action svg{width:16px;height:16px}
+    .heading{padding:28px 28px 24px}
+    h1{font-weight:720;font-size:clamp(25px,4.2vw,38px);margin:0 0 7px;letter-spacing:-.045em}
+    .subtitle{font-size:14px;color:var(--soft);margin:0 0 18px}
+    .sync-label{font-size:14px;color:#c8c9cc;font-variant-numeric:tabular-nums;min-height:21px}
+    .sync-label small{font-size:12px;color:var(--muted)}
+    .rows{border-top:1px solid var(--row-border);border-bottom:1px solid var(--row-border)}
+    .currency-row{display:grid;grid-template-columns:76px minmax(140px,1fr) minmax(112px,1.1fr) 38px;align-items:center;gap:15px;padding:15px 28px;min-height:104px;background:var(--row);border-bottom:1px solid var(--row-border);transition:background .13s}
+    .currency-row:last-child{border-bottom:0}
+    .currency-row.active{background:var(--active)}
+    .flag{font-size:48px;line-height:1;display:flex;align-items:center;width:76px;min-height:52px;white-space:nowrap;user-select:none}
+    .picker{display:inline-flex;align-items:center;position:relative;min-width:0;width:max-content;max-width:100%;border-radius:7px;gap:12px}
+    .picker:focus-within{outline:2px solid #8aadc9;outline-offset:5px}
+    .currency-code{font-size:clamp(24px,3.7vw,35px);letter-spacing:-.025em;font-weight:450;line-height:1.1}
+    .chevron{width:18px;height:18px;flex:0 0 auto;color:#bbbfc4}
+    .currency-select{appearance:none;position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2}
+    .currency-select option{color:#fff;background:#23262b}
+    .amount{display:block;width:100%;min-width:0;border:0;outline:0;background:transparent;color:#b4b5b9;text-align:right;font-size:clamp(23px,3.65vw,35px);font-weight:430;font-variant-numeric:tabular-nums;letter-spacing:-.035em;padding:8px 0;line-height:1.3;caret-color:#fff;border-radius:0}
+    .active .amount,.amount:focus{color:#f4f6f9}
+    .amount::placeholder{color:#73777e}
+    .amount:focus{box-shadow:inset 0 -2px 0 #aecbe5}
+    .rate-info{width:37px;height:37px;display:grid;place-items:center;background:transparent;border:0;color:#8c9096;border-radius:9px}
+    .rate-info:hover{background:#ffffff10;color:#dde9f2}
+    .rate-info svg{width:26px;height:26px}
+    .active .rate-info{opacity:.6}
+    .controls-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 28px 0;flex-wrap:wrap}
+    .status{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.5;color:#a7afb4;min-width:0}
+    .dot{width:9px;height:9px;border-radius:50%;background:#dcb577;flex:0 0 auto;margin-top:5px}
+    .dot.good{background:#7eccac}.dot.offline{background:#e5a39d}
+    .status b{color:#dfe6e9;font-weight:650}
+    .other-actions{display:flex;gap:15px;flex-wrap:wrap}
+    .text-button{border:0;background:transparent;color:#9eb9d1;text-decoration:underline;text-decoration-color:#5a7387;text-underline-offset:4px;font-size:12px;padding:4px 0}
+    .hint{font-size:12px;color:#7e8288;line-height:1.65;margin:18px 28px 0}
+    .hint a{color:#a8bcd0}
+    .toast{position:fixed;left:50%;bottom:22px;max-width:calc(100vw - 32px);padding:13px 18px;transform:translate(-50%,24px);opacity:0;pointer-events:none;border:1px solid #537765;border-radius:12px;color:#ecfff4;background:#223c33;box-shadow:0 13px 44px #000a;transition:opacity .2s,transform .2s;z-index:15;text-align:center;font-size:13px}
+    .toast.visible{opacity:1;transform:translate(-50%,0)}.toast.error{color:#ffefeb;border-color:#8d5b56;background:#492c2b}
+    dialog{width:min(420px,calc(100% - 32px));background:#20242a;color:#f1f3f5;border:1px solid #48515b;border-radius:16px;padding:25px;box-shadow:0 30px 120px #000c}
+    dialog::backdrop{background:#0009}
+    .dialog-header{display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .dialog-header h2{font-size:20px;margin:0}
+    .dialog-close{border:0;background:transparent;color:#b6c0c9;font-size:25px;line-height:1;padding:2px 7px}
+    .detail-line{font-size:22px;font-variant-numeric:tabular-nums;margin:22px 0}
+    .detail-meta{font-size:13px;color:#aab1b9;line-height:1.6}
+    .currency-row{grid-template-columns:76px minmax(120px,1fr) minmax(120px,1.1fr) 36px 36px;gap:12px}
+    .remove-currency{width:36px;height:36px;display:grid;place-items:center;border:1px solid transparent;border-radius:9px;background:transparent;color:#a6a8ae;font-size:25px;font-weight:350;line-height:1}
+    .remove-currency:hover,.remove-currency:focus-visible{color:#ffc2c2;background:#522d31;border-color:#8a474a}
+    .manage-currencies{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:20px 28px 0}
+    .add-button{display:inline-flex;align-items:center;gap:9px;background:#253b50;border:1px solid #5c809d;border-radius:11px;color:#e8f4ff;padding:11px 17px;font-size:14px;font-weight:700}
+    .add-button:hover{background:#304e69;border-color:#9dc0e0}
+    .add-button:disabled{opacity:.43;cursor:not-allowed}
+    .add-plus{font-size:23px;line-height:.7;font-weight:400}
+    .currency-count{font-size:13px;color:#a1a6ac;font-variant-numeric:tabular-nums}
+    .empty-state{padding:38px 26px;text-align:center;color:#abb1b9;font-size:15px;line-height:1.6}
+    .empty-state b{color:#ebeff4;font-size:18px;display:block;margin-bottom:6px}
+    #add-dialog{width:min(500px,calc(100% - 24px));padding:21px}
+    .search-label{display:block;margin:22px 0 9px;font-size:13px;color:#aeb8c4}
+    .currency-search{width:100%;padding:13px;border:1px solid #48596c;border-radius:10px;color:#f5f7fa;background:#141b23;outline:none;font-size:15px}
+    .currency-search:focus{border-color:#a9cbe7;box-shadow:0 0 0 2px #a9cbe733}
+    .currency-results{margin-top:13px;max-height:min(48vh,410px);overflow:auto;border:1px solid #343e48;border-radius:10px}
+    .currency-option{width:100%;text-align:left;display:flex;gap:13px;align-items:center;border:0;border-bottom:1px solid #333b43;background:#212a33;color:#e9eef4;padding:12px 14px;min-height:58px}
+    .currency-option:last-child{border-bottom:0}.currency-option:hover,.currency-option:focus-visible{background:#354657}
+    .currency-option-flag{font-size:27px;min-width:34px}
+    .currency-option-code{font-size:17px;font-weight:760;min-width:46px}
+    .currency-option-name{font-size:13px;color:#b9c6d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .no-results{padding:24px;text-align:center;color:#b2b8be;font-size:14px}
+    @media(max-width:580px){
+      .app{padding-top:20px}
+      .topbar{padding:0 17px}.heading{padding:23px 17px 22px}
+      .logo{font-size:18px}.logo-mark{width:32px;height:32px}
+      .action{padding:9px 10px}.action .refresh-text{display:none}
+      .currency-row{grid-template-columns:46px minmax(73px,1fr) minmax(90px,1.25fr) 24px 26px;gap:8px;min-height:86px;padding:11px 14px}
+      .flag{width:48px;font-size:34px;min-height:42px}
+      .currency-code{font-size:clamp(23px,6vw,30px)}
+      .chevron{width:16px;height:16px}.picker{gap:6px}
+      .amount{font-size:clamp(21px,6vw,29px)}
+      .rate-info{width:24px;height:35px}.rate-info svg{width:20px;height:20px}
+      .remove-currency{width:26px;height:34px;font-size:24px}
+      .manage-currencies{padding:18px 14px 0}.add-button{padding:11px 13px}
+      .controls-foot{padding:15px 17px 0}.hint{margin:15px 17px 0}
+    }
+    @media(max-width:365px){.currency-row{grid-template-columns:36px minmax(68px,1fr) minmax(77px,1.1fr) 23px;gap:7px;padding:10px 10px}.flag{font-size:29px;width:36px}.currency-code{font-size:22px}.amount{font-size:21px}.rate-info{display:none}.remove-currency{width:23px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <div class="logo"><span class="logo-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16m0 0-4-4m4 4-4 4M20 16H4m0 0 4-4m-4 4 4 4"/></svg></span>SixFX</div>
+    <div class="top-controls"><button id="refresh" class="action" type="button" title="Download the latest published exchange rates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 11a8 8 0 0 0-14-4L3 9V4m0 5h5M4 13a8 8 0 0 0 14 4l2-2v5m0-5h-5"/></svg><span class="refresh-text">Refresh rates</span></button></div>
+  </header>
+  <section class="heading">
+    <h1>Currency converter</h1>
+    <p class="subtitle">Edit any amount to update every currency. Add up to 20.</p>
+    <div class="sync-label" id="updated">Checking saved rates…</div>
+  </section>
+  <section class="rows" id="rows" aria-label="Linked currency amounts"></section>
+  <div class="manage-currencies">
+    <button type="button" class="add-button" id="add-currency"><span aria-hidden="true" class="add-plus">+</span> Add currency</button>
+    <span class="currency-count" id="currency-count" aria-live="polite">6 / 20 currencies</span>
+  </div>
+  <div class="controls-foot">
+    <div class="status" role="status" aria-live="polite"><span class="dot" id="status-dot" aria-hidden="true"></span><span><b id="status-title">Loading</b><span id="status-description"> · Checking saved rates</span></span></div>
+    <div class="other-actions"><button type="button" class="text-button" id="backup-export">Export offline backup</button><button type="button" class="text-button" id="backup-import">Import backup</button><input type="file" id="backup-file" hidden accept=".json,application/json"></div>
+  </div>
+  <p class="hint">Daily reference rates, not bank or money-transfer quotes. Saved rates work offline after one successful sync. Source: <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">Exchange Rate API</a>. Your amounts and currencies are stored on this device.</p>
+</main>
+<dialog id="add-dialog" aria-labelledby="add-title">
+  <div class="dialog-header"><h2 id="add-title">Add a currency</h2><button type="button" class="dialog-close" id="add-close" aria-label="Close">×</button></div>
+  <label class="search-label" for="currency-search">Search by currency code or name</label>
+  <input type="search" class="currency-search" id="currency-search" placeholder="Search, e.g. PKR or Pakistani rupee" autocomplete="off">
+  <div id="add-results" class="currency-results" role="group" aria-label="Available currencies"></div>
+</dialog>
+<dialog id="rate-dialog"><div class="dialog-header"><h2 id="detail-title">Exchange rate</h2><button class="dialog-close" type="button" id="detail-close" aria-label="Close">×</button></div><div class="detail-line" id="detail-rate"></div><div class="detail-meta" id="detail-description"></div></dialog>
+<div class="toast" id="toast" role="alert"></div>
+<noscript>JavaScript is needed to run this currency converter.</noscript>
+<script>
+(() => {
+  'use strict';
+  const API = 'https://open.er-api.com/v6/latest/USD';
+  const RATE_KEY = 'sixfx_rates_v1';  // Preserve the first version's offline cache.
+  const PREF_KEY = 'sixfx_linked_preferences_v3';
+  const PREV_PREF_KEY = 'sixfx_linked_preferences_v2';
+  const MAX_CURRENCIES = 20;
+  const OLD_PREF_KEY = 'sixfx_preferences_v1';
+  const COMMON_CODES = ['USD','EUR','PKR','QAR','AED','SAR','GBP','CAD','AUD','JPY','INR','CNY','CHF','SGD','KWD','BHD','OMR','BDT','LKR','MYR','THB','KRW','HKD','NZD','ZAR','MXN','BRL','EGP','PHP','NGN','VND','IDR','SEK','NOK','DKK','PLN','TRY','CZK','HUF','ILS','JOD','RON','UAH','RUB','KES','MAD','TWD'];
+  const REGIONS = {USD:'US',EUR:'EU',PKR:'PK',QAR:'QA',AED:'AE',SAR:'SA',GBP:'GB',CAD:'CA',AUD:'AU',JPY:'JP',INR:'IN',CNY:'CN',CHF:'CH',SGD:'SG',KWD:'KW',BHD:'BH',OMR:'OM',BDT:'BD',LKR:'LK',MYR:'MY',THB:'TH',KRW:'KR',HKD:'HK',NZD:'NZ',ZAR:'ZA',MXN:'MX',BRL:'BR',EGP:'EG',PHP:'PH',NGN:'NG',VND:'VN',IDR:'ID',SEK:'SE',NOK:'NO',DKK:'DK',PLN:'PL',TRY:'TR',CZK:'CZ',HUF:'HU',ILS:'IL',JOD:'JO',RON:'RO',UAH:'UA',RUB:'RU',KES:'KE',MAD:'MA',TWD:'TW',AFN:'AF',DZD:'DZ',ARS:'AR',CLP:'CL',COP:'CO',ETB:'ET',GHS:'GH',IQD:'IQ',IRR:'IR',KZT:'KZ',LBP:'LB',NPR:'NP',PEN:'PE',TND:'TN',TZS:'TZ',UGX:'UG',UYU:'UY',UZS:'UZ'};
+  const el = id => document.getElementById(id);
+  const state = {currencies:['USD','EUR','PKR','QAR','AED','SAR'], active:2, amount:'2,500', rates:null, busy:false, error:'', lastAttempt:0, toastTimer:null, storageOK:true};
+  let displayNames = null;
+  try {displayNames = new Intl.DisplayNames([navigator.language || 'en'],{type:'currency'});} catch (_) {}
+
+  function read(key){try{return JSON.parse(localStorage.getItem(key));}catch(_){return null;}}
+  function save(key,value){try{localStorage.setItem(key,JSON.stringify(value));state.storageOK=true;return true;}catch(_){state.storageOK=false;return false;}}
+  function isCode(code){return typeof code==='string' && /^[A-Z]{3}$/.test(code);}
+  function validateRates(data){
+    if(!data || !data.rates || typeof data.rates !=='object' || Array.isArray(data.rates))return null;
+    const entries=Object.entries(data.rates).filter(([k,v])=>isCode(k) && Number.isFinite(v) && v>0);
+    if(entries.length<20 || !entries.some(([k])=>k==='USD'))return null;
+    const updatedAt=Number(data.updatedAt),fetchedAt=Number(data.fetchedAt),nextUpdateAt=Number(data.nextUpdateAt);
+    if(!Number.isFinite(updatedAt) || updatedAt<946684800000 || updatedAt>Date.now()+86400000)return null;
+    return {rates:Object.fromEntries(entries),updatedAt,fetchedAt:Number.isFinite(fetchedAt)?fetchedAt:0,nextUpdateAt:Number.isFinite(nextUpdateAt)?nextUpdateAt:0};
+  }
+  function parseAmount(text){
+    const n=String(text).replace(/,/g,'').trim();
+    if(!n || !/^-?(?:\d+\.?\d*|\.\d+)$/.test(n))return null;
+    const value=Number(n);return Number.isFinite(value)?value:null;
+  }
+  function cleanNumber(number){
+    if(!Number.isFinite(number))return '—';
+    const abs=Math.abs(number);
+    let decimals=abs>0&&abs<0.001?8:abs<0.01?6:abs<1?5:3;
+    if(abs>=1e12)return number.toExponential(5);
+    return new Intl.NumberFormat('en-US',{maximumFractionDigits:decimals}).format(number);
+  }
+  function enteredFormatted(raw){
+    const value=parseAmount(raw);if(value===null)return raw;
+    const pieces=raw.replace(/,/g,'').trim().split('.');
+    if(pieces.length===2 && pieces[1].length<=10){
+      const whole=Number(pieces[0]||0).toLocaleString('en-US',{maximumFractionDigits:0});
+      return whole+'.'+pieces[1];
+    }
+    return new Intl.NumberFormat('en-US',{maximumFractionDigits:10}).format(value);
+  }
+  function getRate(from,to){
+    const r=state.rates&&state.rates.rates;
+    return r && Number.isFinite(r[from]) && Number.isFinite(r[to]) ? r[to]/r[from] : null;
+  }
+  function currencyName(code){try{return displayNames?.of(code)||code;}catch(_){return code;}}
+  function flag(code){const r=REGIONS[code];return r ? String.fromCodePoint(...[...r].map(ch=>127397+ch.charCodeAt(0))) : '🌐';}
+  function dateLabel(ms){return ms>0 && Number.isFinite(ms)?new Intl.DateTimeFormat(undefined,{month:'short',day:'2-digit',year:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(ms)):'Unknown';}
+  function savePrefs(){save(PREF_KEY,{currencies:state.currencies,active:state.active,amount:state.amount});}
+  function validCurrencies(value){
+    return Array.isArray(value) && value.length<=MAX_CURRENCIES &&
+      value.every(isCode) && new Set(value).size===value.length;
+  }
+  function initFromSaved(){
+    state.rates=validateRates(read(RATE_KEY));
+    let prefs=read(PREF_KEY)||read(PREV_PREF_KEY);
+    if(!prefs){
+      const old=read(OLD_PREF_KEY);
+      if(old&&isCode(old.base)&&Array.isArray(old.targets)&&old.targets.length===6&&old.targets.every(isCode)){
+        const oldDefaults=['PKR','EUR','GBP','AED','SAR','CAD'];
+        const customized=old.base!=='USD'||old.targets.some((c,i)=>c!==oldDefaults[i]);
+        if(customized)prefs={currencies:[...new Set([old.base,...old.targets])].slice(0,6),active:0,amount:old.amount};
+      }
+    }
+    if(prefs && validCurrencies(prefs.currencies))state.currencies=prefs.currencies.slice();
+    if(prefs && Number.isInteger(prefs.active) && prefs.active>=0 && prefs.active<state.currencies.length)state.active=prefs.active;
+    else state.active=Math.min(state.active,Math.max(0,state.currencies.length-1));
+    if(prefs && typeof prefs.amount==='string' && prefs.amount.length<=80)state.amount=prefs.amount;
+  }
+  function allCodes(){
+    const available=state.rates?Object.keys(state.rates.rates):COMMON_CODES;
+    return [...new Set([...COMMON_CODES.filter(k=>available.includes(k)),...available,...state.currencies])].filter(isCode);
+  }
+  function selectOptions(){
+    const codes=allCodes(),fav=COMMON_CODES.filter(k=>codes.includes(k)),others=codes.filter(k=>!COMMON_CODES.includes(k)).sort();
+    return [...fav,...others];
+  }
+  function fillSelects(){
+    const codes=selectOptions();
+    document.querySelectorAll('.currency-select').forEach((select,i)=>{
+      const frag=document.createDocumentFragment();
+      for(const code of codes){
+        const option=document.createElement('option');option.value=code;
+        option.textContent=`${code} — ${currencyName(code)}`;
+        option.disabled=state.currencies.includes(code) && code!==state.currencies[i];
+        frag.append(option);
+      }
+      select.replaceChildren(frag);select.value=state.currencies[i];
+    });
+  }
+  function buildRows(){
+    const root=el('rows');root.replaceChildren();
+    if(state.currencies.length===0){
+      const empty=document.createElement('div');empty.className='empty-state';
+      empty.innerHTML='<b>No currencies yet</b>Tap “Add currency” below to start your list.';
+      root.append(empty);
+    }
+    for(let i=0;i<state.currencies.length;i++){
+      const row=document.createElement('div');row.className='currency-row';row.dataset.row=i;
+      row.innerHTML=`<span class="flag" aria-hidden="true"></span>
+        <div class="picker"><span class="currency-code"></span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><select class="currency-select" aria-label="Change currency for row ${i+1}"></select></div>
+        <input class="amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="Amount in row ${i+1}">
+        <button class="rate-info" type="button" title="Show current exchange rate" aria-label="Show exchange rate for row ${i+1}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg></button>
+        <button class="remove-currency" type="button" title="Remove currency" aria-label="Remove ${state.currencies[i]}" >×</button>`;
+      const input=row.querySelector('input');
+      input.addEventListener('focus',()=>{
+        if(state.active!==i){
+          const amount=parseAmount(state.amount), r=getRate(state.currencies[state.active],state.currencies[i]);
+          state.amount=amount===null||r===null?'':cleanNumber(amount*r);
+          state.active=i;savePrefs();renderAmounts();
+        } else {row.classList.add('active');}
+      });
+      input.addEventListener('input',()=>{state.active=i;state.amount=input.value;savePrefs();renderAmounts();});
+      input.addEventListener('blur',()=>{
+        if(state.active===i){state.amount=enteredFormatted(state.amount);input.value=state.amount;savePrefs();}
+      });
+      row.querySelector('select').addEventListener('change',event=>{
+        const newCode=event.target.value;
+        if(state.currencies.some((code,j)=>code===newCode&&j!==i)){
+          event.target.value=state.currencies[i];toast('That currency is already in your list',true);return;
+        }
+        state.currencies[i]=newCode;
+        savePrefs();fillSelects();renderAmounts();
+      });
+      row.querySelector('.rate-info').addEventListener('click',()=>showRate(i));
+      row.querySelector('.remove-currency').addEventListener('click',()=>removeCurrency(i));
+      root.append(row);
+    }
+    updateListControls();
+  }
+  function updateListControls(){
+    const n=state.currencies.length;
+    el('currency-count').textContent=`${n} / ${MAX_CURRENCIES} currencies`;
+    el('add-currency').disabled=n>=MAX_CURRENCIES;
+    el('add-currency').title=n>=MAX_CURRENCIES?'Maximum 20 currencies reached':'Add another currency';
+  }
+  function availableToAdd(){return selectOptions().filter(code=>!state.currencies.includes(code));}
+  function renderAddChoices(){
+    const q=el('currency-search').value.trim().toLowerCase();
+    const results=el('add-results');results.replaceChildren();
+    const matches=availableToAdd().filter(code=>code.toLowerCase().includes(q)||currencyName(code).toLowerCase().includes(q));
+    if(matches.length===0){const empty=document.createElement('div');empty.className='no-results';empty.textContent='No available matching currencies';results.append(empty);return;}
+    const frag=document.createDocumentFragment();
+    for(const code of matches){
+      const item=document.createElement('button');item.type='button';item.className='currency-option';
+      const f=document.createElement('span');f.className='currency-option-flag';f.textContent=flag(code);
+      const c=document.createElement('span');c.className='currency-option-code';c.textContent=code;
+      const name=document.createElement('span');name.className='currency-option-name';name.textContent=currencyName(code);
+      item.append(f,c,name);item.addEventListener('click',()=>addCurrency(code));frag.append(item);
+    }
+    results.append(frag);
+  }
+  function openAddDialog(){
+    if(state.currencies.length>=MAX_CURRENCIES){toast('You can add up to 20 currencies',true);return;}
+    el('currency-search').value='';renderAddChoices();
+    const dialog=el('add-dialog');if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+    el('currency-search').focus();
+  }
+  function closeAddDialog(){const d=el('add-dialog');if(d.close)d.close();else d.removeAttribute('open');}
+  function addCurrency(code){
+    if(state.currencies.length>=MAX_CURRENCIES){toast('Maximum 20 currencies reached',true);return;}
+    if(!isCode(code)||state.currencies.includes(code)||!selectOptions().includes(code)){toast('Currency unavailable or already added',true);return;}
+    const first=state.currencies.length===0;
+    state.currencies.push(code);
+    if(first){state.active=0;state.amount='1';}
+    savePrefs();buildRows();fillSelects();renderAmounts();closeAddDialog();
+    const row=el('rows').lastElementChild;
+    if(row)row.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function removeCurrency(i){
+    if(i<0||i>=state.currencies.length)return;
+    const removed=state.currencies[i];
+    // When deleting the active currency, preserve the amount's value in a surviving currency.
+    if(i===state.active&&state.currencies.length>1){
+      const nextIndex=i===state.currencies.length-1?i-1:i+1;
+      const amount=parseAmount(state.amount);
+      const rate=getRate(removed,state.currencies[nextIndex]);
+      state.amount=amount!==null&&rate!==null?cleanNumber(amount*rate):state.amount;
+      state.active=nextIndex;
+    }
+    state.currencies.splice(i,1);
+    if(state.currencies.length===0){state.active=0;state.amount='1';}
+    else if(i<state.active)state.active--;
+    else if(state.active>=state.currencies.length)state.active=state.currencies.length-1;
+    savePrefs();buildRows();fillSelects();renderAmounts();
+    toast(`${removed} removed`);
+  }
+  function renderAmounts(){
+    const value=parseAmount(state.amount);
+    const base=state.currencies[state.active];
+    document.querySelectorAll('.currency-row').forEach((row,i)=>{
+      const code=state.currencies[i],active=i===state.active,rate=getRate(base,code);
+      row.classList.toggle('active',active);
+      row.querySelector('.flag').textContent=flag(code);
+      row.querySelector('.currency-code').textContent=code;
+      const input=row.querySelector('input');
+      input.setAttribute('aria-label',`${code} amount; edit to recalculate all currencies`);
+      if(active){
+        if(document.activeElement!==input && input.value!==state.amount)input.value=state.amount;
+      } else {
+        const converted=value===null||rate===null?'':cleanNumber(value*rate);
+        if(input.value!==converted)input.value=converted;
+      }
+      row.querySelector('.rate-info').setAttribute('aria-label',`Show rate for ${code} against ${base}`);
+      row.querySelector('.remove-currency').setAttribute('aria-label',`Remove ${code}`);
+    });
+  }
+  function toast(message,error=false){const t=el('toast');t.textContent=message;t.className='toast visible'+(error?' error':'');clearTimeout(state.toastTimer);state.toastTimer=setTimeout(()=>t.classList.remove('visible'),3000);}
+  function updateStatus(){
+    const offline=navigator.onLine===false;
+    const dot=el('status-dot'),title=el('status-title'),desc=el('status-description');
+    dot.className='dot';
+    if(!state.rates){
+      dot.classList.add('offline');el('updated').textContent='No exchange rates downloaded yet';
+      title.textContent=state.busy?'Downloading rates':'No saved rates';
+      desc.textContent=' · Connect to the internet and refresh once';
+      return;
+    }
+    const date=state.rates.fetchedAt||state.rates.updatedAt;
+    el('updated').textContent=`Updated: ${dateLabel(date)}`;
+    if(state.busy){title.textContent='Checking for updates';desc.textContent=' · Saved rates remain usable';return;}
+    const old=Date.now()-state.rates.updatedAt>2*86400000;
+    if(offline||state.error||old){
+      dot.classList.add('offline');title.textContent=offline?'Offline · saved rates':state.error?'Using saved rates':'Saved rates may be outdated';
+    }else{dot.classList.add('good');title.textContent='Rates available';}
+    const lastPublished=dateLabel(state.rates.updatedAt);
+    desc.textContent=` · Published ${lastPublished} · ${Object.keys(state.rates.rates).length} currencies`;
+    if(!state.storageOK)desc.textContent+=' · Local storage unavailable';
+  }
+  async function refresh(manual=false){
+    if(state.busy)return;
+    const now=Date.now();
+    if(!manual && state.rates && (now-state.rates.fetchedAt<3600000 || (state.rates.nextUpdateAt && now<state.rates.nextUpdateAt+60000))){updateStatus();return;}
+    if(manual && now-state.lastAttempt<15000){toast('Please wait a moment before refreshing');return;}
+    if(navigator.onLine===false){state.error='Offline';updateStatus();if(manual)toast('You are offline. Saved rates are still available.',true);return;}
+    state.busy=true;state.lastAttempt=now;state.error='';el('refresh').disabled=true;updateStatus();
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+    try{
+      const response=await fetch(API,{cache:'no-store',signal:controller.signal});
+      if(!response.ok)throw Error('Exchange rate service unavailable');
+      const json=await response.json();
+      if(json.result!=='success'||json.base_code!=='USD')throw Error('Unexpected exchange rate response');
+      const validated=validateRates({rates:json.rates,updatedAt:Number(json.time_last_update_unix)*1000,nextUpdateAt:Number(json.time_next_update_unix)*1000,fetchedAt:Date.now()});
+      if(!validated)throw Error('Invalid rate data');
+      state.rates=validated;
+      const cached=save(RATE_KEY,validated);
+      fillSelects();renderAmounts();
+      if(el('add-dialog').open)renderAddChoices();
+      if(manual)toast(cached?'Rates refreshed and saved':'Rates updated, but offline storage was blocked',!cached);
+    }catch(e){state.error=e.name==='AbortError'?'Request timed out':e.message||'Network error';if(manual||!state.rates)toast(state.rates?'Refresh failed. Saved rates remain available.':'Cannot download rates. Check your connection.',true);}
+    finally{clearTimeout(timer);state.busy=false;el('refresh').disabled=false;updateStatus();}
+  }
+  function showRate(i){
+    const base=state.currencies[state.active],target=state.currencies[i],rate=getRate(base,target);
+    el('detail-title').textContent=`${base} to ${target}`;
+    el('detail-rate').textContent=rate===null?'Rate unavailable':`1 ${base} = ${new Intl.NumberFormat('en-US',{maximumSignificantDigits:8}).format(rate)} ${target}`;
+    el('detail-description').textContent=state.rates?`Reference rate published ${dateLabel(state.rates.updatedAt)}. This is not a historical price chart or a guaranteed transaction rate.`:'Connect online once to download exchange rates.';
+    const dialog=el('rate-dialog');if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');
+  }
+  function exportBackup(){
+    if(!state.rates){toast('No saved rates to export',true);return;}
+    const payload={app:'SixFX',version:3,exportedAt:new Date().toISOString(),rates:state.rates,preferences:{currencies:state.currencies,active:state.active,amount:state.amount}};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'})),a=document.createElement('a');
+    a.href=url;a.download='sixfx-offline-backup.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);toast('Offline backup exported');
+  }
+  async function importBackup(file){
+    if(!file)return;
+    try{
+      if(file.size>250000)throw Error('Backup file is too large');
+      const payload=JSON.parse(await file.text());
+      if(payload.app!=='SixFX'||![1,2,3].includes(payload.version))throw Error('Not a SixFX backup');
+      const rates=validateRates(payload.rates);if(!rates)throw Error('Invalid rates in backup');
+      state.rates=rates;const cached=save(RATE_KEY,rates);
+      const p=payload.preferences||{};
+      if(validCurrencies(p.currencies)){
+        state.currencies=p.currencies.slice();state.active=Number.isInteger(p.active)&&p.active>=0&&p.active<state.currencies.length?p.active:0;
+      }else if(isCode(p.base)&&Array.isArray(p.targets)&&p.targets.length===6&&p.targets.every(isCode)){
+        state.currencies=[...new Set([p.base,...p.targets])].slice(0,MAX_CURRENCIES);state.active=0;
+      }
+      if(typeof p.amount==='string'&&p.amount.length<=80)state.amount=p.amount;
+      savePrefs();buildRows();fillSelects();renderAmounts();updateStatus();
+      toast(cached?'Backup restored':'Backup imported but browser storage is unavailable',!cached);
+    }catch(e){toast(e.message||'Backup could not be imported',true);}
+    finally{el('backup-file').value='';}
+  }
+  function init(){
+    initFromSaved();buildRows();fillSelects();renderAmounts();updateStatus();
+    el('refresh').addEventListener('click',()=>refresh(true));
+    el('add-currency').addEventListener('click',openAddDialog);
+    el('add-close').addEventListener('click',closeAddDialog);
+    el('currency-search').addEventListener('input',renderAddChoices);
+    el('backup-export').addEventListener('click',exportBackup);
+    el('backup-import').addEventListener('click',()=>el('backup-file').click());
+    el('backup-file').addEventListener('change',e=>importBackup(e.target.files[0]));
+    el('detail-close').addEventListener('click',()=>el('rate-dialog').close());
+    window.addEventListener('online',()=>{state.error='';refresh(false);});
+    window.addEventListener('offline',updateStatus);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false);});
+    refresh(false);
+  }
+  init();
+})();
+</script>
+<script>
+  // The app remains usable as a normal web page; registration adds an offline app shell.
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' })
+        .catch(err => console.warn('SixFX offline app shell unavailable:', err));
+    });
+  }
+</script>
+</body>
+</html>
